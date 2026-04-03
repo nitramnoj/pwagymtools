@@ -1,0 +1,12 @@
+{
+  "name": "Gym Tools",
+  "short_name": "GymTools",
+  "id": "/gymtools_pwa_rebuild/",
+  "start_url": "/gymtools_pwa_rebuild/index.html",
+  "scope": "/gymtools_pwa_rebuild/",
+  "display": "fullscreen",
+  "background_color": "#05070b",
+  "theme_color": "#05070b",
+  "description": "Gym tools PWA with timers, exercise selector and split screen.",
+  "icons": []
+}

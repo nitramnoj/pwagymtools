@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#05070b" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Gym Timer</title>
+<link rel="stylesheet" href="../shared.css" />
+<style>
+.screen{ display:none; }
+.screen.active{ display:block; }
+.menu-shell{
+  min-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 96px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.settings-shell{
+  width:min(820px,100%);
+  margin:0 auto;
+}
+.saved-list{ display:grid; gap:14px; }
+</style>
+</head>
+<body>
+<div class="topbar compact">
+  <a class="small-btn" href="../menu.html">Back</a>
+  <div class="title">Gym Timer</div>
+  <button class="small-btn" data-theme-toggle>Theme</button>
+  <button class="small-btn" data-fullscreen-toggle>Full</button>
+</div>
+
+<main class="app-screen">
+  <section id="menuScreen" class="screen active">
+    <div class="menu-shell">
+      <div class="menu-grid" style="width:min(760px,100%);"> 
+ 	<button class="tool-btn" data-open="hiit">HIIT</button>
+        <button class="tool-btn" data-open="interval">Interval (EMOM)</button>     
+        <button class="tool-btn" data-open="stopwatch">Stopwatch</button>
+        <button class="tool-btn" data-open="countdown">Countdown</button>
+        <button class="tool-btn" id="repeatLastBtn">Repeat Last</button> 
+        <button class="tool-btn" data-open="saved">Saved Sessions</button>
+       Session</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="hiitScreen" class="screen">
+    <div class="settings-shell">
+      <div class="section">
+        <h2 class="section-title">HIIT</h2>
+        <div class="field">
+          <div class="label">Work</div>
+          <div class="stepper">
+            <button class="step-btn" data-adjust="hiitWork" data-step="-5">−</button>
+            <div class="value-box" id="hiitWorkValue">30 sec</div>
+            <button class="step-btn" data-adjust="hiitWork" data-step="5">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="label">Rest</div>
+          <div class="stepper">
+            <button class="step-btn" data-adjust="hiitRest" data-step="-5">−</button>
+            <div class="value-box" id="hiitRestValue">30 sec</div>
+            <button class="step-btn" data-adjust="hiitRest" data-step="5">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="label">Rounds</div>
+          <div class="stepper">
+            <button class="step-btn" data-adjust="hiitRounds" data-step="-1">−</button>
+            <div class="value-box" id="hiitRoundsValue">10</div>
+            <button class="step-btn" data-adjust="hiitRounds" data-step="1">+</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <button class="big-btn primary" id="hiitStartBtn">Start</button>
+          <button class="big-btn" data-back-menu>Back to Menu</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="intervalScreen" class="screen">
+    <div class="settings-shell">
+      <div class="section">
+        <h2 class="section-title">Interval Blocks</h2>
+        <div class="field">
+          <div class="label">Block length</div>
+          <div class="stepper">
+            <button class="step-btn" data-adjust="blockLength" data-step="-5">−</button>
+            <div class="value-box" id="blockLengthValue">60 sec</div>
+            <button class="step-btn" data-adjust="blockLength" data-step="5">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="label">Rounds</div>
+          <div class="stepper">
+            <button class="step-btn" data-adjust="blockRounds" data-step="-1">−</button>
+            <div class="value-box" id="blockRoundsValue">10</div>
+            <button class="step-btn" data-adjust="blockRounds" data-step="1">+</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <button class="big-btn primary" id="intervalStartBtn">Start</button>
+          <button class="big-btn" data-back-menu>Back to Menu</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="countdownScreen" class="screen">
+    <div class="settings-shell">
+      <div class="section">
+        <h2 class="section-title">Countdown</h2>
+        <div class="field">
+          <div class="label">Time</div>
+          <div class="stepper">
+            <button class="step-btn" data-adjust="countdownTime" data-step="-5">−</button>
+            <div class="value-box" id="countdownTimeValue">10 sec</div>
+            <button class="step-btn" data-adjust="countdownTime" data-step="5">+</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <button class="big-btn primary" id="countdownStartBtn">Start</button>
+          <button class="big-btn" data-back-menu>Back to Menu</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <section id="stopwatchScreen" class="screen">
+    <div class="center-stack" style="min-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 120px);">
+      <div class="display" id="stopwatchValue">00:00</div>
+      <div class="control-row">
+        <button class="big-btn primary" id="stopwatchToggleBtn">Start</button>
+        <button class="big-btn" id="stopwatchResetBtn">Reset</button>
+        <button class="big-btn" data-back-menu>Back</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="timerScreen" class="screen">
+    <div class="center-stack" style="min-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 120px);">
+      <div class="timer-card">
+        <div class="timer-phase" id="timerLabel">READY</div>
+        <div class="timer-text" id="timerValue">00:30</div>
+        <div class="timer-subtext" id="timerRound"></div>
+      </div>
+      <div class="control-row">
+        <button class="big-btn primary" id="timerToggleBtn">Pause</button>
+        <button class="big-btn" id="timerResetBtn">Reset</button>
+        <button class="big-btn" data-back-menu>Back</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="savedScreen" class="screen">
+    <div class="page-wrap">
+      <div class="section">
+        <h2 class="section-title">Saved Sessions</h2>
+        <div id="savedList" class="saved-list"></div>
+        <div class="control-row" style="margin-top:16px;">
+          <button class="big-btn" data-back-menu>Back to Menu</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="completeScreen" class="screen">
+    <div class="center-stack" style="min-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 120px);">
+      <div class="display" style="font-size:clamp(56px,10vw,120px);">Session Complete</div>
+      <div class="control-row">
+        <button class="big-btn primary" id="repeatBtn">Repeat</button>
+        <button class="big-btn" data-back-menu>Back to Menu</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="utility-clock-wrap"><div class="utility-clock" data-utility-clock>00:00</div></div>
+<div class="fullscreen-fab"><button class="small-btn fullscreen-btn" data-fullscreen-toggle>⛶</button></div>
+
+<script src="../shared.js"></script>
+<script>
+registerSharedSetup();
+
+const STORAGE_KEY = 'gymToolsGymTimerMeta';
+const SAVED_KEY = 'gymToolsGymTimerSaved';
+const state = {
+  hiitWork: 30,
+  hiitRest: 30,
+  hiitRounds: 10,
+  blockLength: 60,
+  blockRounds: 10,
+  countdownTime: 10,
+  currentScreen: 'menu',
+  timer: null,
+  timerMode: null,
+  running: false,
+  paused: false,
+  stepStartedAt: 0,
+  pausedRemainingMs: 0,
+  totalMs: 0,
+  currentRound: 1,
+  phase: null,
+  timerConfig: null,
+  lastSession: null,
+  stopwatchInterval: null,
+  stopwatchRunning: false,
+  stopwatchStartedAt: 0,
+  stopwatchElapsedBefore: 0,
+  preCountdownTimer: null,
+  preCountdownActive: false,
+  preCountdownRemaining: 0,
+  wakeLock: null
+};
+let savedSessions = [];
+
+const screens = {
+  menu: document.getElementById('menuScreen'),
+  hiit: document.getElementById('hiitScreen'),
+  interval: document.getElementById('intervalScreen'),
+  countdown: document.getElementById('countdownScreen'),
+  stopwatch: document.getElementById('stopwatchScreen'),
+  timer: document.getElementById('timerScreen'),
+  saved: document.getElementById('savedScreen'),
+  complete: document.getElementById('completeScreen')
+};
+const savedList = document.getElementById('savedList');
+const topBackBtn = document.querySelector('.topbar .small-btn[href="../menu.html"], .topbar .small-btn');
+const mainClockEls = Array.from(document.querySelectorAll('[data-main-clock]'));
+const screenHistory = [];
+
+function loadStorage() {
+  try {
+    const meta = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    Object.assign(state, {
+      hiitWork: Number(meta.hiitWork) || state.hiitWork,
+      hiitRest: Number(meta.hiitRest) || state.hiitRest,
+      hiitRounds: Number(meta.hiitRounds) || state.hiitRounds,
+      blockLength: Number(meta.blockLength) || state.blockLength,
+      blockRounds: Number(meta.blockRounds) || state.blockRounds,
+      countdownTime: Number(meta.countdownTime) || state.countdownTime,
+      lastSession: meta.lastSession || null
+    });
+  } catch {}
+  try {
+    savedSessions = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
+    if (!Array.isArray(savedSessions)) savedSessions = [];
+  } catch { savedSessions = []; }
+}
+
+function saveMeta() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    hiitWork: state.hiitWork,
+    hiitRest: state.hiitRest,
+    hiitRounds: state.hiitRounds,
+    blockLength: state.blockLength,
+    blockRounds: state.blockRounds,
+    countdownTime: state.countdownTime,
+    lastSession: state.lastSession
+  }));
+}
+function saveSaved() {
+  localStorage.setItem(SAVED_KEY, JSON.stringify(savedSessions));
+}
+
+function setScreen(name, options = {}) {
+  const { pushHistory = true } = options;
+  if (pushHistory && state.currentScreen && state.currentScreen !== name) {
+    screenHistory.push(state.currentScreen);
+  }
+  Object.entries(screens).forEach(([key, node]) => node.classList.toggle('active', key === name));
+  state.currentScreen = name;
+  syncBackButtons();
+  if (name !== 'stopwatch') stopStopwatchIfHidden();
+}
+function syncBackButtons() {
+  const isMenu = state.currentScreen === 'menu';
+  const topBack = document.querySelector('.topbar .small-btn');
+  if (topBack) {
+    topBack.textContent = isMenu ? 'Back' : 'Back';
+  }
+  document.querySelectorAll('[data-back-menu]').forEach(btn => {
+    btn.textContent = screenHistory.length ? 'Back' : 'Back to Menu';
+  });
+}
+function goBack() {
+  resetLiveTimerVisualOnly();
+  if (state.currentScreen === 'menu') {
+    window.location.href = '../menu.html';
+    return;
+  }
+  const previous = screenHistory.pop();
+  setScreen(previous || 'menu', { pushHistory: false });
+}
+function updateMainClock() {
+  const now = new Date();
+  const value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  mainClockEls.forEach(el => el.textContent = value);
+}
+setInterval(updateMainClock, 1000);
+updateMainClock();
+
+function renderSettings() {
+  document.getElementById('hiitWorkValue').textContent = `${state.hiitWork} sec`;
+  document.getElementById('hiitRestValue').textContent = `${state.hiitRest} sec`;
+  document.getElementById('hiitRoundsValue').textContent = String(state.hiitRounds);
+  document.getElementById('blockLengthValue').textContent = `${state.blockLength} sec`;
+  document.getElementById('blockRoundsValue').textContent = String(state.blockRounds);
+  document.getElementById('countdownTimeValue').textContent = `${state.countdownTime} sec`;
+}
+function renderSavedSessions() {
+  savedList.innerHTML = '';
+  if (!savedSessions.length) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.textContent = 'No saved sessions yet.';
+    savedList.appendChild(card);
+    return;
+  }
+  savedSessions.forEach((item) => {
+    const card = document.createElement('div');
+    card.className = 'card list-card';
+    const title = document.createElement('div');
+    title.style.fontWeight = '700';
+    title.style.fontSize = 'clamp(20px,2.4vw,28px)';
+    title.textContent = item.label;
+    const meta = document.createElement('div');
+    meta.className = 'inline-meta';
+    meta.textContent = item.summary;
+    const row = document.createElement('div');
+    row.className = 'control-row';
+    const startBtn = document.createElement('button');
+    startBtn.className = 'card-btn primary';
+    startBtn.textContent = 'Start';
+    startBtn.onclick = () => launchTimer(item.config, false);
+    const delBtn = document.createElement('button');
+    delBtn.className = 'card-btn';
+    delBtn.textContent = 'Delete';
+    delBtn.onclick = () => {
+      savedSessions = savedSessions.filter(x => x.id !== item.id);
+      saveSaved();
+      renderSavedSessions();
+    };
+    row.append(startBtn, delBtn);
+    card.append(title, meta, row);
+    savedList.appendChild(card);
+  });
+}
+function bindButtons() {
+  const topBack = document.querySelector('.topbar .small-btn');
+  if (topBack) {
+    topBack.addEventListener('click', (event) => {
+      event.preventDefault();
+      goBack();
+    });
+  }
+  document.querySelectorAll('[data-open]').forEach(btn => btn.addEventListener('click', () => setScreen(btn.dataset.open)));
+  document.querySelectorAll('[data-back-menu]').forEach(btn => btn.addEventListener('click', () => {
+    goBack();
+  }));
+  document.querySelectorAll('[data-adjust]').forEach(btn => btn.addEventListener('click', () => {
+    const key = btn.dataset.adjust;
+    const step = Number(btn.dataset.step) || 0;
+    if (!(key in state)) return;
+    const max = key.includes('Rounds') ? 99 : 3600;
+    state[key] = clamp(Number(state[key]) + step, 1, max);
+    renderSettings();
+    saveMeta();
+  }));
+  document.getElementById('hiitStartBtn').addEventListener('click', () => launchTimer(buildHiitConfig(), true));
+  document.getElementById('intervalStartBtn').addEventListener('click', () => launchTimer(buildBlockConfig(), true));
+  document.getElementById('countdownStartBtn').addEventListener('click', () => launchTimer(buildCountdownConfig(), false));
+  document.getElementById('timerToggleBtn').addEventListener('click', toggleTimer);
+  document.getElementById('timerResetBtn').addEventListener('click', resetLiveTimer);
+  document.getElementById('repeatBtn').addEventListener('click', () => {
+    if (state.lastSession) launchTimer(structuredClone(state.lastSession), false);
+  });
+  document.getElementById('repeatLastBtn').addEventListener('click', () => {
+    if (state.lastSession) launchTimer(structuredClone(state.lastSession), false);
+  });
+  document.getElementById('stopwatchToggleBtn').addEventListener('click', toggleStopwatch);
+  document.getElementById('stopwatchResetBtn').addEventListener('click', resetStopwatch);
+}
+
+function buildHiitConfig() {
+  return { type: 'hiit', workMs: state.hiitWork * 1000, restMs: state.hiitRest * 1000, rounds: state.hiitRounds, label:'HIIT', summary:`${state.hiitWork}s work / ${state.hiitRest}s rest / ${state.hiitRounds} rounds` };
+}
+function buildBlockConfig() {
+  return { type: 'interval', lengthMs: state.blockLength * 1000, rounds: state.blockRounds, label:'Interval Blocks', summary:`${state.blockLength}s blocks / ${state.blockRounds} rounds` };
+}
+function buildCountdownConfig() {
+  return { type: 'countdown', totalMs: state.countdownTime * 1000, label:'Countdown', summary:`${state.countdownTime}s countdown` };
+}
+
+function launchTimer(config, saveAsLast) {
+  clearInterval(state.timer);
+  state.timer = null;
+  state.timerConfig = structuredClone(config);
+  if (saveAsLast && (config.type === 'hiit' || config.type === 'interval')) {
+    state.lastSession = structuredClone(config);
+    saveCurrentSession(config);
+  } else if (config.type === 'hiit' || config.type === 'interval') {
+    state.lastSession = structuredClone(config);
+  }
+  saveMeta();
+  setScreen('timer');
+  applyInitialTimerVisual(config);
+  startPreCountdown(() => {
+    if (config.type === 'hiit') beginTimerStep(config.workMs);
+    if (config.type === 'interval') beginTimerStep(config.lengthMs);
+    if (config.type === 'countdown') beginTimerStep(config.totalMs);
+  });
+}
+
+function saveCurrentSession(config) {
+  const entry = {
+    id: `saved-${Date.now()}`,
+    label: config.label,
+    summary: config.summary,
+    config: structuredClone(config)
+  };
+  savedSessions = [entry, ...savedSessions.filter(item => item.summary !== entry.summary || item.label !== entry.label)].slice(0, 20);
+  saveSaved();
+  renderSavedSessions();
+}
+function applyInitialTimerVisual(config) {
+  if (config.type === 'hiit') {
+    state.timerMode = 'hiit';
+    state.currentRound = 1;
+    state.phase = 'work';
+    document.getElementById('timerValue').textContent = msToClock(config.workMs);
+    updateTimerVisual('WORK', `ROUND 1 / ${config.rounds}`, 'var(--success)');
+  } else if (config.type === 'interval') {
+    state.timerMode = 'interval';
+    state.currentRound = 1;
+    state.phase = 'interval';
+    document.getElementById('timerValue').textContent = msToClock(config.lengthMs);
+    updateTimerVisual('INTERVAL', `ROUND 1 / ${config.rounds}`, 'var(--blue)');
+  } else {
+    state.timerMode = 'countdown';
+    state.currentRound = 0;
+    state.phase = 'countdown';
+    document.getElementById('timerValue').textContent = msToClock(config.totalMs);
+    updateTimerVisual('COUNTDOWN', '', 'var(--blue)');
+  }
+}
+function updateTimerVisual(label, roundText, bg) {
+  document.getElementById('timerLabel').textContent = label;
+  document.getElementById('timerRound').textContent = roundText;
+  document.getElementById('timerScreen').style.background = bg;
+}
+function resetLiveTimerVisualOnly() {
+  document.getElementById('timerScreen').style.background = '';
+  document.getElementById('timerToggleBtn').textContent = 'Pause';
+}
+function startPreCountdown(callback) {
+  clearInterval(state.preCountdownTimer);
+  state.preCountdownActive = true;
+  state.preCountdownRemaining = 3;
+  document.getElementById('timerLabel').textContent = 'READY';
+  document.getElementById('timerRound').textContent = 'Starting in…';
+  document.getElementById('timerValue').textContent = '03';
+  window.__gymtoolsBeepManager.beep('countdown');
+  state.preCountdownTimer = setInterval(() => {
+    state.preCountdownRemaining -= 1;
+    if (state.preCountdownRemaining > 0) {
+      document.getElementById('timerValue').textContent = String(state.preCountdownRemaining).padStart(2, '0');
+      window.__gymtoolsBeepManager.beep('countdown');
+      return;
+    }
+    clearInterval(state.preCountdownTimer);
+    state.preCountdownTimer = null;
+    state.preCountdownActive = false;
+    callback();
+  }, 1000);
+}
+async function beginTimerStep(ms) {
+  clearInterval(state.timer);
+  state.running = true;
+  state.paused = false;
+  state.pausedRemainingMs = ms;
+  state.totalMs = ms;
+  state.stepStartedAt = performance.now();
+  document.getElementById('timerToggleBtn').textContent = 'Pause';
+  if (!state.wakeLock) state.wakeLock = await requestWakeLockSafe();
+  tickTimer();
+  state.timer = setInterval(tickTimer, 100);
+}
+function tickTimer() {
+  const remaining = Math.max(0, state.totalMs - (performance.now() - state.stepStartedAt));
+  state.pausedRemainingMs = remaining;
+  document.getElementById('timerValue').textContent = msToClock(remaining);
+  maybeCountdownCue(remaining);
+  if (remaining <= 0) handleTimerStepEnd();
+}
+function maybeCountdownCue(remainingMs) {
+  const sec = Math.ceil(remainingMs / 1000);
+  if (remainingMs <= 3100 && remainingMs > 0) {
+    if (state._lastCue !== sec && [3,2,1].includes(sec)) {
+      state._lastCue = sec;
+      window.__gymtoolsBeepManager.beep('countdown');
+    }
+  }
+  if (remainingMs > 3100) state._lastCue = null;
+}
+function handleTimerStepEnd() {
+  clearInterval(state.timer);
+  state.timer = null;
+  state._lastCue = null;
+  window.__gymtoolsBeepManager.beep('done');
+  const c = state.timerConfig;
+  if (!c) return;
+  if (state.timerMode === 'hiit') {
+    if (state.phase === 'work') {
+      state.phase = 'rest';
+      updateTimerVisual('REST', `ROUND ${state.currentRound} / ${c.rounds}`, 'var(--danger)');
+      beginTimerStep(c.restMs);
+    } else {
+      if (state.currentRound >= c.rounds) finishSession();
+      else {
+        state.currentRound += 1;
+        state.phase = 'work';
+        updateTimerVisual('WORK', `ROUND ${state.currentRound} / ${c.rounds}`, 'var(--success)');
+        beginTimerStep(c.workMs);
+      }
+    }
+  } else if (state.timerMode === 'interval') {
+    if (state.currentRound >= c.rounds) finishSession();
+    else {
+      state.currentRound += 1;
+      updateTimerVisual('INTERVAL', `ROUND ${state.currentRound} / ${c.rounds}`, 'var(--blue)');
+      beginTimerStep(c.lengthMs);
+    }
+  } else {
+    finishSession();
+  }
+}
+function toggleTimer() {
+  if (state.preCountdownActive) return;
+  if (!state.running && state.pausedRemainingMs > 0) {
+    beginTimerStep(state.pausedRemainingMs);
+    return;
+  }
+  if (!state.running) return;
+  clearInterval(state.timer);
+  state.timer = null;
+  state.running = false;
+  state.paused = true;
+  document.getElementById('timerToggleBtn').textContent = 'Resume';
+}
+function resetLiveTimer() {
+  clearInterval(state.timer);
+  clearInterval(state.preCountdownTimer);
+  state.timer = null;
+  state.preCountdownTimer = null;
+  state.running = false;
+  state.paused = false;
+  state.preCountdownActive = false;
+  if (state.timerConfig) applyInitialTimerVisual(state.timerConfig);
+  document.getElementById('timerToggleBtn').textContent = 'Pause';
+}
+function finishSession() {
+  clearInterval(state.timer);
+  state.timer = null;
+  state.running = false;
+  state.paused = false;
+  if (state.wakeLock) { try { state.wakeLock.release(); } catch {} state.wakeLock = null; }
+  setScreen('complete');
+}
+function toggleStopwatch() {
+  const btn = document.getElementById('stopwatchToggleBtn');
+  if (!state.stopwatchRunning) {
+    state.stopwatchRunning = true;
+    state.stopwatchStartedAt = performance.now();
+    btn.textContent = 'Pause';
+    state.stopwatchInterval = setInterval(() => {
+      const elapsed = state.stopwatchElapsedBefore + (performance.now() - state.stopwatchStartedAt);
+      document.getElementById('stopwatchValue').textContent = msToClock(elapsed);
+    }, 100);
+    return;
+  }
+  clearInterval(state.stopwatchInterval);
+  state.stopwatchInterval = null;
+  state.stopwatchElapsedBefore += performance.now() - state.stopwatchStartedAt;
+  state.stopwatchRunning = false;
+  btn.textContent = 'Resume';
+}
+function resetStopwatch() {
+  clearInterval(state.stopwatchInterval);
+  state.stopwatchInterval = null;
+  state.stopwatchRunning = false;
+  state.stopwatchElapsedBefore = 0;
+  document.getElementById('stopwatchValue').textContent = '00:00';
+  document.getElementById('stopwatchToggleBtn').textContent = 'Start';
+}
+function stopStopwatchIfHidden() {
+  if (state.currentScreen !== 'stopwatch' && state.stopwatchRunning) {
+    clearInterval(state.stopwatchInterval);
+    state.stopwatchInterval = null;
+    state.stopwatchElapsedBefore += performance.now() - state.stopwatchStartedAt;
+    state.stopwatchRunning = false;
+    document.getElementById('stopwatchToggleBtn').textContent = 'Resume';
+  }
+}
+
+loadStorage();
+renderSettings();
+renderSavedSessions();
+bindButtons();
+syncBackButtons();
+</script>
+</body>
+</html>

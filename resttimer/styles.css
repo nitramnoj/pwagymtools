@@ -1,0 +1,37 @@
+
+.menu-buttons { display:grid; gap:14px; width:min(760px,100%); margin:0 auto; }
+.set-counter-card, .saved-item, .block-item, .status-card {
+  background:var(--bg-elev);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:18px;
+  box-shadow:var(--shadow);
+}
+.set-counter-value{
+  font-size:clamp(110px,24vw,260px);
+  line-height:.9;
+  font-weight:800;
+  letter-spacing:-.05em;
+  text-align:center;
+}
+.set-counter-text{
+  text-align:center;
+  color:var(--muted);
+  font-size:clamp(28px,4vw,42px);
+}
+.quick-shell, .timer-shell{ width:min(760px,100%); margin:0 auto; }
+.saved-list,.block-list{ display:grid; gap:12px; }
+.block-meta,.saved-meta,.status-label{ color:var(--muted); }
+.card-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+.stepper-grid{
+  display:grid;
+  gap:16px;
+}
+.full-layout{
+  display:grid;
+  grid-template-columns:minmax(320px,420px) minmax(320px,1fr);
+  gap:16px;
+}
+@media (max-width:860px){
+  .full-layout{ grid-template-columns:1fr; }
+}
