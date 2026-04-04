@@ -154,7 +154,7 @@ async function requestWakeLockSafe() {
 function getClockHomeHref() {
   const path = window.location.pathname;
   if (path.endsWith('/index.html') || path.endsWith('/')) return 'index.html';
-  return '../index.html';
+  return '/pwagymtools/index.html';
 }
 
 function installIdleReturn() {
