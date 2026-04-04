@@ -1,9 +1,9 @@
 {
   "name": "Gym Tools",
   "short_name": "GymTools",
-  "id": "/gymtools_pwa_rebuild/",
-  "start_url": "/gymtools_pwa_rebuild/index.html",
-  "scope": "/gymtools_pwa_rebuild/",
+  "id": "/pwagymtools/",
+  "start_url": "/pwagymtools/index.html",
+  "scope": "/pwagymtools/",
   "display": "fullscreen",
   "background_color": "#05070b",
   "theme_color": "#05070b",
