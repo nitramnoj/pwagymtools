@@ -123,7 +123,7 @@ function createBeepManager() {
         osc.connect(gain);
         const start = now + index * 0.11;
         osc.start(start);
-        gain.gain.exponentialRampToValueAtTime(0.18, start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.4, start + 0.01);
         gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.1);
         osc.stop(start + 0.11);
       });

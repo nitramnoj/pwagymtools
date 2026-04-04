@@ -35,14 +35,13 @@
 <main class="app-screen">
   <section id="menuScreen" class="screen active">
     <div class="menu-shell">
-      <div class="menu-grid" style="width:min(760px,100%);"> 
- 	<button class="tool-btn" data-open="hiit">HIIT</button>
-        <button class="tool-btn" data-open="interval">Interval (EMOM)</button>     
+      <div class="menu-grid" style="width:min(760px,100%);">
+        <button class="tool-btn" data-open="hiit">HIIT</button>
+        <button class="tool-btn" data-open="interval">Interval (EMOM)</button>
         <button class="tool-btn" data-open="stopwatch">Stopwatch</button>
         <button class="tool-btn" data-open="countdown">Countdown</button>
-        <button class="tool-btn" id="repeatLastBtn">Repeat Last</button> 
+        <button class="tool-btn" id="repeatLastBtn">Repeat Last</button>
         <button class="tool-btn" data-open="saved">Saved Sessions</button>
-       Session</button>
       </div>
     </div>
   </section>
@@ -131,15 +130,12 @@
     </div>
   </section>
 
-
-
   <section id="stopwatchScreen" class="screen">
     <div class="center-stack" style="min-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 120px);">
       <div class="display" id="stopwatchValue">00:00</div>
       <div class="control-row">
         <button class="big-btn primary" id="stopwatchToggleBtn">Start</button>
         <button class="big-btn" id="stopwatchResetBtn">Reset</button>
-        <button class="big-btn" data-back-menu>Back</button>
       </div>
     </div>
   </section>
@@ -154,7 +150,6 @@
       <div class="control-row">
         <button class="big-btn primary" id="timerToggleBtn">Pause</button>
         <button class="big-btn" id="timerResetBtn">Reset</button>
-        <button class="big-btn" data-back-menu>Back</button>
       </div>
     </div>
   </section>
@@ -191,6 +186,7 @@ registerSharedSetup();
 
 const STORAGE_KEY = 'gymToolsGymTimerMeta';
 const SAVED_KEY = 'gymToolsGymTimerSaved';
+
 const state = {
   hiitWork: 30,
   hiitRest: 30,
@@ -217,8 +213,10 @@ const state = {
   preCountdownTimer: null,
   preCountdownActive: false,
   preCountdownRemaining: 0,
-  wakeLock: null
+  wakeLock: null,
+  _lastCue: null
 };
+
 let savedSessions = [];
 
 const screens = {
@@ -231,83 +229,148 @@ const screens = {
   saved: document.getElementById('savedScreen'),
   complete: document.getElementById('completeScreen')
 };
+
 const savedList = document.getElementById('savedList');
-const topBackBtn = document.querySelector('.topbar .small-btn[href="../menu.html"], .topbar .small-btn');
-const mainClockEls = Array.from(document.querySelectorAll('[data-main-clock]'));
 const screenHistory = [];
+
+function snapToFive(value) {
+  let v = Number(value) || 0;
+  if (v < 5) v = 5;
+  return Math.round(v / 5) * 5;
+}
 
 function loadStorage() {
   try {
     const meta = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    Object.assign(state, {
-      hiitWork: Number(meta.hiitWork) || state.hiitWork,
-      hiitRest: Number(meta.hiitRest) || state.hiitRest,
-      hiitRounds: Number(meta.hiitRounds) || state.hiitRounds,
-      blockLength: Number(meta.blockLength) || state.blockLength,
-      blockRounds: Number(meta.blockRounds) || state.blockRounds,
-      countdownTime: Number(meta.countdownTime) || state.countdownTime,
-      lastSession: meta.lastSession || null
-    });
+
+    state.hiitWork = meta.hiitWork != null ? snapToFive(meta.hiitWork) : state.hiitWork;
+    state.hiitRest = meta.hiitRest != null ? snapToFive(meta.hiitRest) : state.hiitRest;
+    state.blockLength = meta.blockLength != null ? snapToFive(meta.blockLength) : state.blockLength;
+    state.countdownTime = meta.countdownTime != null ? snapToFive(meta.countdownTime) : state.countdownTime;
+
+    state.hiitRounds = Number(meta.hiitRounds) || state.hiitRounds;
+    state.blockRounds = Number(meta.blockRounds) || state.blockRounds;
+    state.lastSession = meta.lastSession || null;
   } catch {}
+
   try {
     savedSessions = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
     if (!Array.isArray(savedSessions)) savedSessions = [];
-  } catch { savedSessions = []; }
+  } catch {
+    savedSessions = [];
+  }
 }
 
 function saveMeta() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    hiitWork: state.hiitWork,
-    hiitRest: state.hiitRest,
+    hiitWork: snapToFive(state.hiitWork),
+    hiitRest: snapToFive(state.hiitRest),
     hiitRounds: state.hiitRounds,
-    blockLength: state.blockLength,
+    blockLength: snapToFive(state.blockLength),
     blockRounds: state.blockRounds,
-    countdownTime: state.countdownTime,
+    countdownTime: snapToFive(state.countdownTime),
     lastSession: state.lastSession
   }));
 }
+
 function saveSaved() {
   localStorage.setItem(SAVED_KEY, JSON.stringify(savedSessions));
 }
 
 function setScreen(name, options = {}) {
   const { pushHistory = true } = options;
+
   if (pushHistory && state.currentScreen && state.currentScreen !== name) {
     screenHistory.push(state.currentScreen);
   }
-  Object.entries(screens).forEach(([key, node]) => node.classList.toggle('active', key === name));
+
+  Object.entries(screens).forEach(([key, node]) => {
+    node.classList.toggle('active', key === name);
+  });
+
   state.currentScreen = name;
   syncBackButtons();
+
   if (name !== 'stopwatch') stopStopwatchIfHidden();
 }
+
 function syncBackButtons() {
-  const isMenu = state.currentScreen === 'menu';
-  const topBack = document.querySelector('.topbar .small-btn');
-  if (topBack) {
-    topBack.textContent = isMenu ? 'Back' : 'Back';
-  }
   document.querySelectorAll('[data-back-menu]').forEach(btn => {
     btn.textContent = screenHistory.length ? 'Back' : 'Back to Menu';
   });
 }
+
+function hasActiveTimerSession() {
+  return !!(
+    state.running ||
+    state.paused ||
+    state.preCountdownActive ||
+    state.timer ||
+    state.preCountdownTimer
+  );
+}
+
+function hardResetTimerSession() {
+  clearInterval(state.timer);
+  clearInterval(state.preCountdownTimer);
+  state.timer = null;
+  state.preCountdownTimer = null;
+  state.running = false;
+  state.paused = false;
+  state.preCountdownActive = false;
+  state.pausedRemainingMs = 0;
+  state.totalMs = 0;
+  state.stepStartedAt = 0;
+  state.currentRound = 1;
+  state.phase = null;
+  state.timerMode = null;
+  state.timerConfig = null;
+  state.preCountdownRemaining = 0;
+  state._lastCue = null;
+
+  document.getElementById('timerScreen').style.background = '';
+  document.getElementById('timerLabel').textContent = 'READY';
+  document.getElementById('timerValue').textContent = '00:00';
+  document.getElementById('timerRound').textContent = '';
+  document.getElementById('timerToggleBtn').textContent = 'Start';
+
+  if (state.wakeLock) {
+    try { state.wakeLock.release(); } catch {}
+    state.wakeLock = null;
+  }
+}
+
 function goBack() {
-  resetLiveTimerVisualOnly();
+  if (hasActiveTimerSession()) {
+    const ok = window.confirm('A timer is still running. Leave this page and reset the timer?');
+    if (!ok) return;
+    hardResetTimerSession();
+  }
+
   if (state.currentScreen === 'menu') {
     window.location.href = '../menu.html';
     return;
   }
+
   const previous = screenHistory.pop();
   setScreen(previous || 'menu', { pushHistory: false });
 }
-function updateMainClock() {
-  const now = new Date();
-  const value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  mainClockEls.forEach(el => el.textContent = value);
+
+function handleMenuNavigation(targetHref) {
+  if (hasActiveTimerSession()) {
+    const ok = window.confirm('A timer is still running. Leave this page and reset the timer?');
+    if (!ok) return;
+    hardResetTimerSession();
+  }
+  window.location.href = targetHref;
 }
-setInterval(updateMainClock, 1000);
-updateMainClock();
 
 function renderSettings() {
+  state.hiitWork = snapToFive(state.hiitWork);
+  state.hiitRest = snapToFive(state.hiitRest);
+  state.blockLength = snapToFive(state.blockLength);
+  state.countdownTime = snapToFive(state.countdownTime);
+
   document.getElementById('hiitWorkValue').textContent = `${state.hiitWork} sec`;
   document.getElementById('hiitRestValue').textContent = `${state.hiitRest} sec`;
   document.getElementById('hiitRoundsValue').textContent = String(state.hiitRounds);
@@ -315,8 +378,10 @@ function renderSettings() {
   document.getElementById('blockRoundsValue').textContent = String(state.blockRounds);
   document.getElementById('countdownTimeValue').textContent = `${state.countdownTime} sec`;
 }
+
 function renderSavedSessions() {
   savedList.innerHTML = '';
+
   if (!savedSessions.length) {
     const card = document.createElement('div');
     card.className = 'card';
@@ -324,22 +389,28 @@ function renderSavedSessions() {
     savedList.appendChild(card);
     return;
   }
+
   savedSessions.forEach((item) => {
     const card = document.createElement('div');
     card.className = 'card list-card';
+
     const title = document.createElement('div');
     title.style.fontWeight = '700';
     title.style.fontSize = 'clamp(20px,2.4vw,28px)';
     title.textContent = item.label;
+
     const meta = document.createElement('div');
     meta.className = 'inline-meta';
     meta.textContent = item.summary;
+
     const row = document.createElement('div');
     row.className = 'control-row';
+
     const startBtn = document.createElement('button');
     startBtn.className = 'card-btn primary';
     startBtn.textContent = 'Start';
     startBtn.onclick = () => launchTimer(item.config, false);
+
     const delBtn = document.createElement('button');
     delBtn.className = 'card-btn';
     delBtn.textContent = 'Delete';
@@ -348,32 +419,61 @@ function renderSavedSessions() {
       saveSaved();
       renderSavedSessions();
     };
+
     row.append(startBtn, delBtn);
     card.append(title, meta, row);
     savedList.appendChild(card);
   });
 }
+
 function bindButtons() {
-  const topBack = document.querySelector('.topbar .small-btn');
+  const topBack = document.querySelector('.topbar .small-btn[href="../menu.html"]');
   if (topBack) {
     topBack.addEventListener('click', (event) => {
       event.preventDefault();
+
+      if (state.currentScreen === 'menu') {
+        handleMenuNavigation('../menu.html');
+        return;
+      }
+
       goBack();
     });
   }
-  document.querySelectorAll('[data-open]').forEach(btn => btn.addEventListener('click', () => setScreen(btn.dataset.open)));
-  document.querySelectorAll('[data-back-menu]').forEach(btn => btn.addEventListener('click', () => {
-    goBack();
-  }));
-  document.querySelectorAll('[data-adjust]').forEach(btn => btn.addEventListener('click', () => {
-    const key = btn.dataset.adjust;
-    const step = Number(btn.dataset.step) || 0;
-    if (!(key in state)) return;
-    const max = key.includes('Rounds') ? 99 : 3600;
-    state[key] = clamp(Number(state[key]) + step, 1, max);
-    renderSettings();
-    saveMeta();
-  }));
+
+  document.querySelectorAll('[data-open]').forEach(btn => {
+    btn.addEventListener('click', () => setScreen(btn.dataset.open));
+  });
+
+  document.querySelectorAll('[data-back-menu]').forEach(btn => {
+    btn.addEventListener('click', () => goBack());
+  });
+
+  document.querySelectorAll('[data-adjust]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.adjust;
+      const step = Number(btn.dataset.step) || 0;
+
+      if (!(key in state)) return;
+
+      const isRounds = key.includes('Rounds');
+      const max = isRounds ? 99 : 3600;
+
+      if (isRounds) {
+        state[key] = clamp(Number(state[key]) + step, 1, max);
+      } else {
+        let value = Number(state[key]) || 0;
+        value = snapToFive(value);
+        value = value + step;
+        value = snapToFive(value);
+        state[key] = clamp(value, 5, max);
+      }
+
+      renderSettings();
+      saveMeta();
+    });
+  });
+
   document.getElementById('hiitStartBtn').addEventListener('click', () => launchTimer(buildHiitConfig(), true));
   document.getElementById('intervalStartBtn').addEventListener('click', () => launchTimer(buildBlockConfig(), true));
   document.getElementById('countdownStartBtn').addEventListener('click', () => launchTimer(buildCountdownConfig(), false));
@@ -390,28 +490,60 @@ function bindButtons() {
 }
 
 function buildHiitConfig() {
-  return { type: 'hiit', workMs: state.hiitWork * 1000, restMs: state.hiitRest * 1000, rounds: state.hiitRounds, label:'HIIT', summary:`${state.hiitWork}s work / ${state.hiitRest}s rest / ${state.hiitRounds} rounds` };
+  return {
+    type: 'hiit',
+    workMs: snapToFive(state.hiitWork) * 1000,
+    restMs: snapToFive(state.hiitRest) * 1000,
+    rounds: state.hiitRounds,
+    label: 'HIIT',
+    summary: `${snapToFive(state.hiitWork)}s work / ${snapToFive(state.hiitRest)}s rest / ${state.hiitRounds} rounds`
+  };
 }
+
 function buildBlockConfig() {
-  return { type: 'interval', lengthMs: state.blockLength * 1000, rounds: state.blockRounds, label:'Interval Blocks', summary:`${state.blockLength}s blocks / ${state.blockRounds} rounds` };
+  return {
+    type: 'interval',
+    lengthMs: snapToFive(state.blockLength) * 1000,
+    rounds: state.blockRounds,
+    label: 'Interval Blocks',
+    summary: `${snapToFive(state.blockLength)}s blocks / ${state.blockRounds} rounds`
+  };
 }
+
 function buildCountdownConfig() {
-  return { type: 'countdown', totalMs: state.countdownTime * 1000, label:'Countdown', summary:`${state.countdownTime}s countdown` };
+  return {
+    type: 'countdown',
+    totalMs: snapToFive(state.countdownTime) * 1000,
+    label: 'Countdown',
+    summary: `${snapToFive(state.countdownTime)}s countdown`
+  };
 }
 
 function launchTimer(config, saveAsLast) {
   clearInterval(state.timer);
+  clearInterval(state.preCountdownTimer);
   state.timer = null;
+  state.preCountdownTimer = null;
+  state.running = false;
+  state.paused = false;
+  state.preCountdownActive = false;
+  state.pausedRemainingMs = 0;
+  state._lastCue = null;
+
   state.timerConfig = structuredClone(config);
+
   if (saveAsLast && (config.type === 'hiit' || config.type === 'interval')) {
     state.lastSession = structuredClone(config);
     saveCurrentSession(config);
   } else if (config.type === 'hiit' || config.type === 'interval') {
     state.lastSession = structuredClone(config);
   }
+
   saveMeta();
   setScreen('timer');
   applyInitialTimerVisual(config);
+  document.getElementById('timerToggleBtn').textContent = 'Pause';
+
   startPreCountdown(() => {
     if (config.type === 'hiit') beginTimerStep(config.workMs);
     if (config.type === 'interval') beginTimerStep(config.lengthMs);
@@ -426,10 +558,12 @@ function saveCurrentSession(config) {
     summary: config.summary,
     config: structuredClone(config)
   };
+
   savedSessions = [entry, ...savedSessions.filter(item => item.summary !== entry.summary || item.label !== entry.label)].slice(0, 20);
   saveSaved();
   renderSavedSessions();
 }
+
 function applyInitialTimerVisual(config) {
   if (config.type === 'hiit') {
     state.timerMode = 'hiit';
@@ -451,80 +585,92 @@ function applyInitialTimerVisual(config) {
     updateTimerVisual('COUNTDOWN', '', 'var(--blue)');
   }
 }
+
 function updateTimerVisual(label, roundText, bg) {
   document.getElementById('timerLabel').textContent = label;
   document.getElementById('timerRound').textContent = roundText;
   document.getElementById('timerScreen').style.background = bg;
 }
-function resetLiveTimerVisualOnly() {
-  document.getElementById('timerScreen').style.background = '';
-  document.getElementById('timerToggleBtn').textContent = 'Pause';
-}
+
 function startPreCountdown(callback) {
   clearInterval(state.preCountdownTimer);
   state.preCountdownActive = true;
-  state.preCountdownRemaining = 3;
+  state.preCountdownRemaining = 10;
   document.getElementById('timerLabel').textContent = 'READY';
   document.getElementById('timerRound').textContent = 'Starting in…';
-  document.getElementById('timerValue').textContent = '03';
+  document.getElementById('timerValue').textContent = '10';
   window.__gymtoolsBeepManager.beep('countdown');
+
   state.preCountdownTimer = setInterval(() => {
     state.preCountdownRemaining -= 1;
+
     if (state.preCountdownRemaining > 0) {
       document.getElementById('timerValue').textContent = String(state.preCountdownRemaining).padStart(2, '0');
       window.__gymtoolsBeepManager.beep('countdown');
       return;
     }
+
     clearInterval(state.preCountdownTimer);
     state.preCountdownTimer = null;
     state.preCountdownActive = false;
     callback();
   }, 1000);
 }
+
 async function beginTimerStep(ms) {
   clearInterval(state.timer);
+  state.timer = null;
   state.running = true;
   state.paused = false;
   state.pausedRemainingMs = ms;
   state.totalMs = ms;
   state.stepStartedAt = performance.now();
   document.getElementById('timerToggleBtn').textContent = 'Pause';
+
   if (!state.wakeLock) state.wakeLock = await requestWakeLockSafe();
+
   tickTimer();
   state.timer = setInterval(tickTimer, 100);
 }
+
 function tickTimer() {
   const remaining = Math.max(0, state.totalMs - (performance.now() - state.stepStartedAt));
   state.pausedRemainingMs = remaining;
   document.getElementById('timerValue').textContent = msToClock(remaining);
   maybeCountdownCue(remaining);
+
   if (remaining <= 0) handleTimerStepEnd();
 }
+
 function maybeCountdownCue(remainingMs) {
   const sec = Math.ceil(remainingMs / 1000);
   if (remainingMs <= 3100 && remainingMs > 0) {
-    if (state._lastCue !== sec && [3,2,1].includes(sec)) {
+    if (state._lastCue !== sec && [3, 2, 1].includes(sec)) {
       state._lastCue = sec;
       window.__gymtoolsBeepManager.beep('countdown');
     }
   }
   if (remainingMs > 3100) state._lastCue = null;
 }
+
 function handleTimerStepEnd() {
   clearInterval(state.timer);
   state.timer = null;
   state._lastCue = null;
   window.__gymtoolsBeepManager.beep('done');
+
   const c = state.timerConfig;
   if (!c) return;
+
   if (state.timerMode === 'hiit') {
     if (state.phase === 'work') {
       state.phase = 'rest';
       updateTimerVisual('REST', `ROUND ${state.currentRound} / ${c.rounds}`, 'var(--danger)');
       beginTimerStep(c.restMs);
     } else {
-      if (state.currentRound >= c.rounds) finishSession();
-      else {
+      if (state.currentRound >= c.rounds) {
+        finishSession();
+      } else {
         state.currentRound += 1;
         state.phase = 'work';
         updateTimerVisual('WORK', `ROUND ${state.currentRound} / ${c.rounds}`, 'var(--success)');
@@ -532,8 +678,9 @@ function handleTimerStepEnd() {
       }
     }
   } else if (state.timerMode === 'interval') {
-    if (state.currentRound >= c.rounds) finishSession();
-    else {
+    if (state.currentRound >= c.rounds) {
+      finishSession();
+    } else {
       state.currentRound += 1;
       updateTimerVisual('INTERVAL', `ROUND ${state.currentRound} / ${c.rounds}`, 'var(--blue)');
       beginTimerStep(c.lengthMs);
@@ -542,40 +689,84 @@ function handleTimerStepEnd() {
     finishSession();
   }
 }
+
 function toggleTimer() {
   if (state.preCountdownActive) return;
-  if (!state.running && state.pausedRemainingMs > 0) {
-    beginTimerStep(state.pausedRemainingMs);
+
+  if (!state.running) {
+    if (state.paused && state.pausedRemainingMs > 0) {
+      beginTimerStep(state.pausedRemainingMs);
+      return;
+    }
+
+    if (!state.timerConfig) return;
+
+    const c = state.timerConfig;
+
+    if (c.type === 'hiit') {
+      state.timerMode = 'hiit';
+      state.currentRound = 1;
+      state.phase = 'work';
+      updateTimerVisual('WORK', `ROUND 1 / ${c.rounds}`, 'var(--success)');
+      beginTimerStep(c.workMs);
+      return;
+    }
+
+    if (c.type === 'interval') {
+      state.timerMode = 'interval';
+      state.currentRound = 1;
+      state.phase = 'interval';
+      updateTimerVisual('INTERVAL', `ROUND 1 / ${c.rounds}`, 'var(--blue)');
+      beginTimerStep(c.lengthMs);
+      return;
+    }
+
+    if (c.type === 'countdown') {
+      state.timerMode = 'countdown';
+      state.currentRound = 0;
+      state.phase = 'countdown';
+      updateTimerVisual('COUNTDOWN', '', 'var(--blue)');
+      beginTimerStep(c.totalMs);
+      return;
+    }
+
     return;
   }
-  if (!state.running) return;
+
   clearInterval(state.timer);
   state.timer = null;
   state.running = false;
   state.paused = true;
   document.getElementById('timerToggleBtn').textContent = 'Resume';
 }
+
 function resetLiveTimer() {
-  clearInterval(state.timer);
-  clearInterval(state.preCountdownTimer);
-  state.timer = null;
-  state.preCountdownTimer = null;
-  state.running = false;
-  state.paused = false;
-  state.preCountdownActive = false;
-  if (state.timerConfig) applyInitialTimerVisual(state.timerConfig);
-  document.getElementById('timerToggleBtn').textContent = 'Pause';
+  const config = state.timerConfig ? structuredClone(state.timerConfig) : null;
+  hardResetTimerSession();
+
+  if (config) {
+    state.timerConfig = config;
+    applyInitialTimerVisual(config);
+  }
 }
+
 function finishSession() {
   clearInterval(state.timer);
   state.timer = null;
   state.running = false;
   state.paused = false;
-  if (state.wakeLock) { try { state.wakeLock.release(); } catch {} state.wakeLock = null; }
+
+  if (state.wakeLock) {
+    try { state.wakeLock.release(); } catch {}
+    state.wakeLock = null;
+  }
+
   setScreen('complete');
 }
+
 function toggleStopwatch() {
   const btn = document.getElementById('stopwatchToggleBtn');
+
   if (!state.stopwatchRunning) {
     state.stopwatchRunning = true;
     state.stopwatchStartedAt = performance.now();
@@ -586,12 +777,14 @@ function toggleStopwatch() {
     }, 100);
     return;
   }
+
   clearInterval(state.stopwatchInterval);
   state.stopwatchInterval = null;
   state.stopwatchElapsedBefore += performance.now() - state.stopwatchStartedAt;
   state.stopwatchRunning = false;
   btn.textContent = 'Resume';
 }
+
 function resetStopwatch() {
   clearInterval(state.stopwatchInterval);
   state.stopwatchInterval = null;
@@ -600,6 +793,7 @@ function resetStopwatch() {
   document.getElementById('stopwatchValue').textContent = '00:00';
   document.getElementById('stopwatchToggleBtn').textContent = 'Start';
 }
+
 function stopStopwatchIfHidden() {
   if (state.currentScreen !== 'stopwatch' && state.stopwatchRunning) {
     clearInterval(state.stopwatchInterval);
@@ -609,6 +803,18 @@ function stopStopwatchIfHidden() {
     document.getElementById('stopwatchToggleBtn').textContent = 'Resume';
   }
 }
+
+window.addEventListener('pagehide', () => {
+  if (hasActiveTimerSession()) {
+    hardResetTimerSession();
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && hasActiveTimerSession()) {
+    hardResetTimerSession();
+  }
+});
 
 loadStorage();
 renderSettings();

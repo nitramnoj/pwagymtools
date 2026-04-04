@@ -209,11 +209,23 @@ document.getElementById('fullScreenBtn').addEventListener('click', () => {
 document.getElementById('backBtn').addEventListener('click', () => {
   fullscreenView.classList.remove('active');
 });
-document.getElementById('countDownBtn').addEventListener('click', () => {
+const downBtn = document.getElementById('countDownBtn');
+const upBtn = document.getElementById('countUpBtn');
+
+// remove duplicate listeners
+const newDown = downBtn.cloneNode(true);
+const newUp = upBtn.cloneNode(true);
+
+downBtn.replaceWith(newDown);
+upBtn.replaceWith(newUp);
+
+// rebind clean listeners
+newDown.addEventListener('click', () => {
   countInput.value = String(clamp(Number(countInput.value) - 1, 1, 20));
   countBox.textContent = countInput.value;
 });
-document.getElementById('countUpBtn').addEventListener('click', () => {
+
+newUp.addEventListener('click', () => {
   countInput.value = String(clamp(Number(countInput.value) + 1, 1, 20));
   countBox.textContent = countInput.value;
 });
