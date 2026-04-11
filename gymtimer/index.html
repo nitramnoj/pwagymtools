@@ -150,6 +150,7 @@
       <div class="control-row">
         <button class="big-btn primary" id="timerToggleBtn">Pause</button>
         <button class="big-btn" id="timerResetBtn">Reset</button>
+        <button class="big-btn" id="timerSkipBtn">Next</button>
       </div>
     </div>
   </section>
@@ -479,6 +480,7 @@ function bindButtons() {
   document.getElementById('countdownStartBtn').addEventListener('click', () => launchTimer(buildCountdownConfig(), false));
   document.getElementById('timerToggleBtn').addEventListener('click', toggleTimer);
   document.getElementById('timerResetBtn').addEventListener('click', resetLiveTimer);
+  document.getElementById('timerSkipBtn').addEventListener('click', skipToNextInterval);
   document.getElementById('repeatBtn').addEventListener('click', () => {
     if (state.lastSession) launchTimer(structuredClone(state.lastSession), false);
   });
@@ -565,19 +567,24 @@ function saveCurrentSession(config) {
 }
 
 function applyInitialTimerVisual(config) {
+  const skipBtn = document.getElementById('timerSkipBtn');
+
   if (config.type === 'hiit') {
+    if (skipBtn) skipBtn.style.display = '';
     state.timerMode = 'hiit';
     state.currentRound = 1;
     state.phase = 'work';
     document.getElementById('timerValue').textContent = msToClock(config.workMs);
     updateTimerVisual('WORK', `ROUND 1 / ${config.rounds}`, 'var(--success)');
   } else if (config.type === 'interval') {
+    if (skipBtn) skipBtn.style.display = '';
     state.timerMode = 'interval';
     state.currentRound = 1;
     state.phase = 'interval';
     document.getElementById('timerValue').textContent = msToClock(config.lengthMs);
     updateTimerVisual('INTERVAL', `ROUND 1 / ${config.rounds}`, 'var(--blue)');
   } else {
+    if (skipBtn) skipBtn.style.display = 'none';
     state.timerMode = 'countdown';
     state.currentRound = 0;
     state.phase = 'countdown';
@@ -613,6 +620,19 @@ function startPreCountdown(callback) {
     clearInterval(state.preCountdownTimer);
     state.preCountdownTimer = null;
     state.preCountdownActive = false;
+
+    if (state.timerMode === 'hiit') {
+      if (state.phase === 'work') {
+        updateTimerVisual('WORK', `ROUND ${state.currentRound} / ${state.timerConfig.rounds}`, 'var(--success)');
+      } else {
+        updateTimerVisual('REST', `ROUND ${state.currentRound} / ${state.timerConfig.rounds}`, 'var(--danger)');
+      }
+    } else if (state.timerMode === 'interval') {
+      updateTimerVisual('INTERVAL', `ROUND ${state.currentRound} / ${state.timerConfig.rounds}`, 'var(--blue)');
+    } else if (state.timerMode === 'countdown') {
+      updateTimerVisual('COUNTDOWN', '', 'var(--blue)');
+    }
+
     callback();
   }, 1000);
 }
@@ -626,6 +646,18 @@ async function beginTimerStep(ms) {
   state.totalMs = ms;
   state.stepStartedAt = performance.now();
   document.getElementById('timerToggleBtn').textContent = 'Pause';
+
+  if (state.timerMode === 'hiit') {
+    if (state.phase === 'work') {
+      updateTimerVisual('WORK', `ROUND ${state.currentRound} / ${state.timerConfig.rounds}`, 'var(--success)');
+    } else {
+      updateTimerVisual('REST', `ROUND ${state.currentRound} / ${state.timerConfig.rounds}`, 'var(--danger)');
+    }
+  } else if (state.timerMode === 'interval') {
+    updateTimerVisual('INTERVAL', `ROUND ${state.currentRound} / ${state.timerConfig.rounds}`, 'var(--blue)');
+  } else if (state.timerMode === 'countdown') {
+    updateTimerVisual('COUNTDOWN', '', 'var(--blue)');
+  }
 
   if (!state.wakeLock) state.wakeLock = await requestWakeLockSafe();
 
@@ -708,7 +740,7 @@ function toggleTimer() {
       state.currentRound = 1;
       state.phase = 'work';
       updateTimerVisual('WORK', `ROUND 1 / ${c.rounds}`, 'var(--success)');
-      beginTimerStep(c.workMs);
+      startPreCountdown(() => beginTimerStep(c.workMs));
       return;
     }
 
@@ -717,7 +749,7 @@ function toggleTimer() {
       state.currentRound = 1;
       state.phase = 'interval';
       updateTimerVisual('INTERVAL', `ROUND 1 / ${c.rounds}`, 'var(--blue)');
-      beginTimerStep(c.lengthMs);
+      startPreCountdown(() => beginTimerStep(c.lengthMs));
       return;
     }
 
@@ -726,7 +758,7 @@ function toggleTimer() {
       state.currentRound = 0;
       state.phase = 'countdown';
       updateTimerVisual('COUNTDOWN', '', 'var(--blue)');
-      beginTimerStep(c.totalMs);
+      startPreCountdown(() => beginTimerStep(c.totalMs));
       return;
     }
 
@@ -747,7 +779,24 @@ function resetLiveTimer() {
   if (config) {
     state.timerConfig = config;
     applyInitialTimerVisual(config);
+  } else {
+    const skipBtn = document.getElementById('timerSkipBtn');
+    if (skipBtn) skipBtn.style.display = '';
   }
+}
+
+function skipToNextInterval() {
+  if (state.preCountdownActive) return;
+  if (!state.timerConfig) return;
+
+  clearInterval(state.timer);
+  state.timer = null;
+  state.running = false;
+  state.paused = false;
+  state.pausedRemainingMs = 0;
+  state._lastCue = null;
+
+  handleTimerStepEnd();
 }
 
 function finishSession() {
