@@ -47,6 +47,7 @@ const els = {
   startWorkoutBtn: document.getElementById('startWorkoutBtn'),
   resetFlowBtn: document.getElementById('resetFlowBtn'),
   saveWorkoutBtn: document.getElementById('saveWorkoutBtn'),
+  resetBuilderBtn: document.getElementById('resetBuilderBtn'),
   savedWorkouts: document.getElementById('savedWorkouts'),
   goQuickStart: document.getElementById('goQuickStart'),
   goSetCounter: document.getElementById('goSetCounter'),
@@ -140,7 +141,7 @@ function setQuickPreset(value) {
 }
 function startQuickStartFlow() {
   quickStartState = createQuickStartState();
-  navigateTo('quickTimer');
+  navigateTo('quickTimer', { pushHistory: false });
   renderQuickStart();
 }
 function resetQuickStart() {
@@ -150,7 +151,7 @@ function resetQuickStartFromTimer() {
   clearInterval(quickTimerInterval);
   quickTimerInterval = null;
   quickStartState = createQuickStartState();
-  navigateTo('quickSetup');
+  navigateTo('quickTimer', { pushHistory: false });
   renderQuickStart();
 }
 function startQuickTimer() {
