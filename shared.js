@@ -188,6 +188,7 @@ function registerSharedSetup() {
   bindFullscreenButtons();
   startUtilityClocks();
   installTouchGuards();
+  installIdleReturn();
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('/gymtools_pwa_rebuild/sw.js').catch(() => {}));
   }
