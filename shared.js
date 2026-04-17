@@ -1,6 +1,6 @@
 
 const GYMTOOLS_THEME_KEY = 'gymToolsTheme';
-const GYMTOOLS_IDLE_TIMEOUT_MS = 90000;
+const GYMTOOLS_IDLE_TIMEOUT_MS = 7200000; // 2 hours;
 
 function applyStoredTheme() {
   const theme = localStorage.getItem(GYMTOOLS_THEME_KEY) === 'light' ? 'light' : 'dark';
