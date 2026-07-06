@@ -26,7 +26,8 @@ function updateClockDisplays() {
   const now = new Date();
   const hh = String(now.getHours()).padStart(2, '0');
   const mm = String(now.getMinutes()).padStart(2, '0');
-  const timeText = `${hh}:${mm}`;
+  const ss = String(now.getSeconds()).padStart(2, '0');
+ const timeText = `${hh}:${mm}:${ss}`;
   const dateText = now.toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
